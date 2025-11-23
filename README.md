@@ -88,3 +88,94 @@ The random rollout CLI also exposes `--obs-mode`, `--no-board`, and `--log-obs` 
 ### Reward utilities
 
 Reward shaping lives in `rl/reward.py` and is configured via `RewardConfig` @rl/reward.py#12-94 @rl/env.py#21-29. The `RewardCalculator` produces a `RewardBreakdown` containing the score term, step penalty, pellet bonuses, ghost multiplier bonuses, life penalties, and power-up activation rewards. `PacmanEnv.step()` now exposes the most recent breakdown through the `info["reward_breakdown"]` dict, making it easier to debug reward tuning.
+
+### Training pipeline
+
+Use the provided scripts to train and evaluate a baseline DQN agent:
+
+```bash
+# Train with defaults (writes checkpoints/metrics under runs/latest)
+python train_agent.py --episodes 100 --device cpu
+
+# Evaluate a checkpoint with greedy policy
+python evaluate_agent.py --checkpoint runs/latest/latest.pt --episodes 10
+```
+
+- Training configuration is defined in `TrainingConfig` @rl/training.py#16-40. Override values via CLI flags or supply a JSON file with matching keys using `--config`.
+- Checkpoints and metrics are saved as `.pt` and `metrics.json` files in the chosen `--output` directory.
+- `evaluate_agent.py` can consume an existing checkpoint or trigger training if `--train-if-missing --config path/to/config.json` is passed.
+
+#### Configuration reference
+
+`TrainingConfig` supports the following JSON fields (all optional—defaults are applied when omitted):
+
+```json
+{
+  "episodes": 200,
+  "max_steps": 500,
+  "buffer_size": 50000,
+  "batch_size": 64,
+  "warmup_steps": 1000,
+  "target_update_interval": 1000,
+  "gamma": 0.99,
+  "learning_rate": 0.001,
+  "tau": 1.0,
+  "epsilon_start": 1.0,
+  "epsilon_end": 0.05,
+  "epsilon_decay_steps": 50000,
+  "frame_skip": 2,
+  "observation_include_board": false,
+  "seed": 42,
+  "device": "cpu",
+  "reward_config": {
+    "score_scale": 1.0,
+    "step_penalty": -0.1,
+    "pellet_reward": 0.0,
+    "power_pellet_reward": 0.0,
+    "ghost_reward": 0.0,
+    "life_lost_penalty": -100.0,
+    "death_penalty": -500.0
+  },
+  "evaluation_episodes": 5
+}
+```
+
+Store the file (e.g., `configs/dqn_baseline.json`) and pass it via `--config`. CLI overrides always take precedence over values loaded from JSON.
+
+#### CLI highlights
+
+- `--output runs/exp01` keeps checkpoints under `runs/exp01/{best,latest}.pt` and writes per-episode metrics to `runs/exp01/metrics.json`.
+- To resume training from a previous run, reuse the same config and output directory; the script always emits an updated `latest.pt` snapshot at the end of execution.
+- Setting `--device cuda` allows DQN training on GPU (ensure PyTorch detects CUDA).
+- Use `--eval --eval-episodes 20` during training to immediately measure average return with a greedy policy after the final episode.
+
+#### Monitoring progress
+
+- `metrics.json` contains a list of objects with `episode`, `reward`, `steps`, `mean_loss`, and `epsilon`. Load it into pandas, Excel, or TensorBoard.dev (via custom uploader) to visualize learning curves.
+- For lightweight logging during long runs, pipe stdout to a file: `python train_agent.py ... | tee runs/exp01/train.log`.
+
+#### Evaluating checkpoints
+
+```bash
+python evaluate_agent.py \
+  --checkpoint runs/exp01/best.pt \
+  --episodes 20 \
+  --epsilon 0.05
+```
+
+- The evaluation script loads the agent with the same architecture hyperparameters used during training (serialized alongside the checkpoint).
+- Add `--output runs/exp01` to save `evaluation.json`, containing aggregate episode stats (`average_reward`, `std_reward`, `average_length`).
+- If the checkpoint is missing but a config exists, `--train-if-missing` will train using the supplied config before running evaluation.
+
+#### Watch a checkpoint play
+
+```bash
+python play_agent.py runs/exp01/best.pt --episodes 3 --epsilon 0.05
+```
+
+- `play_agent.py` rebuilds `PacmanEnv` in `render_mode="human"` so you can view gameplay in a Pygame window.
+- Pass `--episodes` to watch multiple rollouts back-to-back; the script prints the reward returned for each episode.
+- `--epsilon` controls exploration during playback. Use:
+  - `0.0` for a fully greedy policy (deterministic execution of the learned Q-values).
+  - A small positive value (e.g., `0.05`) to occasionally sample alternate actions, useful for diagnosing behavior in uncertain states.
+- Omit `--max-steps` to use the training horizon; provide a custom value to cap episode length during visualization.

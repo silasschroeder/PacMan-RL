@@ -23,30 +23,28 @@
    - Update README/ExecutionPlan with rollout instructions, reward config notes, and future training tasks.  
    - Success: Contributors can reproduce random rollout and understand environment parameters.
 
-## Phase 2 – Observation & Reward Design (status: in progress)
+## Phase 2 – Observation & Reward Design (status: completed)
 5. **Implement observation builder module** ✅  
    - Consolidated state extraction into `rl/observation.py`, returning structured dicts and flattened vectors via `ObservationBuilder`.  
    - Captures Pacman/ghost kinematics, state flags, pellet counts, score, lives, timers; optional board grid and ObservationPack dual view.  
    - CLI tooling: `examples.random_rollout.py` exposes observation flags; `examples.inspect_observation.py` summarizes snapshots.  
    - Success: Observation size/dtype documented in README; unit test `tests/test_observation.py` verifies vector length across modes.
 
-6. **Design reward function utilities**  
-   - Base reward = score delta; penalties for loss of life; optional shaping toggles.  
-   - Define configuration structure to tweak coefficients.  
-   - Success: Reward tests covering pellet eat, ghost eat, death events.
+6. **Design reward function utilities** ✅  
+   - Reward shaping logic consolidated into `rl/reward.py` with `RewardCalculator`, `RewardSnapshot`, and `RewardBreakdown`.  
+   - `PacmanEnv.step()` now exposes breakdown telemetry for debugging; coefficients configurable via `RewardConfig`.  
+   - Success: Unit tests in `tests/test_reward.py` validate pellet, power-pellet, ghost bonus, life penalty, and step penalty terms.
 
-## Phase 3 – Agent & Training Pipeline (status: pending)
-7. **Build baseline DQN agent focused on Pacman policy**  
-   - Use PyTorch; define network architecture taking chosen observation format.  
-   - Implement replay buffer, epsilon-greedy exploration, target network sync.  
-   - Place code under `rl/agents/dqn.py`.  
-   - Success: Training script runs for set episodes without crashing.
+## Phase 3 – Agent & Training Pipeline (status: completed)
+7. **Build baseline DQN agent focused on Pacman policy** ✅  
+   - Implemented `rl/agents/dqn.py` with configurable `DQNConfig`, policy/target networks, epsilon decay, and checkpoint helpers.  
+   - Added `rl/agents/replay_buffer.py` plus package exports; unit tests (`tests/test_agents.py`) cover replay sampling, training step, and target sync.  
+   - `requirements.txt` now includes `torch==2.2.1` to support the PyTorch-based agent.
 
-8. **Create training & evaluation scripts**  
-   - `train_agent.py`: orchestrates training loop, logging, checkpointing.  
-   - `evaluate_agent.py`: loads checkpoints, runs fixed episodes, reports metrics.  
-   - Integrate configuration files (YAML/JSON) for hyperparameters.  
-   - Success: CLI usage documented in repo README.
+8. **Create training & evaluation scripts** ✅  
+   - Added `rl/training.py` encapsulating training loop, config loading, evaluation utilities, and checkpoint management.  
+   - Introduced CLI entrypoints `train_agent.py` and `evaluate_agent.py` with override flags; README documents workflow.  
+   - Success: suite `python3 -m unittest tests.test_observation tests.test_reward tests.test_agents` passes post-integration.
 
 ## Phase 4 – Tooling & Documentation (status: pending)
 9. **Add instrumentation & visualization**  
