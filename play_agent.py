@@ -39,11 +39,13 @@ def main() -> None:
 
     agent, config = load_checkpoint(str(args.checkpoint))
 
+    env_max_steps = args.max_steps if args.max_steps is not None else config.max_steps
+
     env = PacmanEnv(
         frame_skip=config.frame_skip,
         render_mode="human",
         reward_config=config.reward_config,
-        max_episode_steps=config.max_steps,
+        max_episode_steps=env_max_steps,
         observation_mode="vector",
         include_board_in_observation=config.observation_include_board,
         seed=config.seed,
