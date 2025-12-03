@@ -279,6 +279,12 @@ class GhostEnv:
         
         if not pygame.get_init():
             pygame.init()
+            # Quit mixer to prevent sounds in headless mode
+            if self.render_mode != "human":
+                try:
+                    pygame.mixer.quit()
+                except pygame.error:
+                    pass
         
         if self.render_mode == "human":
             self.screen = pygame.display.set_mode(RESOLUTION)

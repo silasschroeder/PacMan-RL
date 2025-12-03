@@ -186,8 +186,15 @@ def evaluate_agent(
 def train_ghost_agent(
     config: GhostTrainingConfig,
     output_dir: Optional[str] = None,
+    resume_from: Optional[str] = None,
 ) -> GhostDQNAgent:
-    """Train a ghost agent with parallel environments."""
+    """Train a ghost agent with parallel environments.
+    
+    Args:
+        config: Training configuration
+        output_dir: Directory to save checkpoints and metrics
+        resume_from: Path to checkpoint to resume training from
+    """
     
     if config.seed is not None:
         np.random.seed(config.seed)
@@ -210,6 +217,15 @@ def train_ghost_agent(
     # Create agent
     agent = create_agent(config, envs.observation_dim, envs.action_dim)
     
+    # Resume from checkpoint if specified
+    starting_steps = 0
+    if resume_from:
+        print(f"Resuming training from {resume_from}...")
+        checkpoint = torch.load(resume_from, map_location=config.device)
+        agent.load_state_dict(checkpoint["agent"])
+        starting_steps = checkpoint.get("total_steps", 0)
+        print(f"Resumed from step {starting_steps:,}")
+    
     # Create replay buffer
     buffer = VectorizedGhostReplayBuffer(
         capacity=config.buffer_size,
@@ -220,7 +236,7 @@ def train_ghost_agent(
     # Tracking
     metrics: List[Dict[str, Any]] = []
     best_reward = -math.inf
-    total_steps = 0
+    total_steps = starting_steps
     episode_count = 0
     
     output_path = Path(output_dir) if output_dir else None
@@ -362,6 +378,7 @@ def main(cli_args: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Train ghost RL agent")
     parser.add_argument("--config", type=str, help="Path to JSON config file")
     parser.add_argument("--output", type=str, default="runs/ghost_latest", help="Output directory")
+    parser.add_argument("--resume", type=str, help="Checkpoint to resume training from")
     parser.add_argument("--num-envs", type=int, help="Number of parallel environments")
     parser.add_argument("--timesteps", type=int, help="Total training timesteps")
     parser.add_argument("--device", type=str, help="Device (cpu/cuda)")
@@ -397,7 +414,7 @@ def main(cli_args: Optional[list[str]] = None) -> None:
             print(f"  {key}: {value}")
     else:
         # Train
-        train_ghost_agent(config, output_dir=args.output)
+        train_ghost_agent(config, output_dir=args.output, resume_from=args.resume)
 
 
 if __name__ == "__main__":

@@ -64,7 +64,10 @@ class Player(Entity):
             self.board[i][j] = 0
             return EatenObject.DOT
         elif self.board[i][j] == BoardStructure.BIG_DOT.value:
-            self.sfx.power_pellet.play()
+            try:
+                self.sfx.power_pellet.play()
+            except (AttributeError, pygame.error):
+                pass  # Skip sound in headless mode
             self.board[i][j] = 0
             self.powerup = True
             return EatenObject.BIG_DOT
