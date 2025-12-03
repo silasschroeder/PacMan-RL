@@ -137,6 +137,9 @@ class GhostEnv:
         
         self._last_breakdowns = [GhostRewardBreakdown() for _ in range(self.num_ghosts)]
         
+        # Set player to chase mode immediately (skip ready phase)
+        self.game_engine.player.set_to_chase()
+        
         # Get initial observations
         observations = self._get_observations()
         info = self._build_info()

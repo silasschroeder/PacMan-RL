@@ -1,0 +1,62 @@
+[
+  {
+    "timestep": 2500,
+    "episode": 4,
+    "epsilon": 0.9098200000000211,
+    "buffer_size": 5000,
+    "mean_reward": -36.07527542114258,
+    "std_reward": 0.9665298461914062,
+    "mean_length": 500.0,
+    "catch_rate": 0.0,
+    "total_catches": 0,
+    "mean_time_to_catch": null,
+    "std_time_to_catch": null,
+    "min_time_to_catch": null,
+    "max_time_to_catch": null
+  },
+  {
+    "timestep": 5000,
+    "episode": 8,
+    "epsilon": 0.7973200000000473,
+    "buffer_size": 5000,
+    "mean_reward": -1096.25341796875,
+    "std_reward": 0.4642333984375,
+    "mean_length": 500.0,
+    "catch_rate": 0.0,
+    "total_catches": 0,
+    "mean_time_to_catch": null,
+    "std_time_to_catch": null,
+    "min_time_to_catch": null,
+    "max_time_to_catch": null
+  },
+  {
+    "timestep": 7500,
+    "episode": 12,
+    "epsilon": 0.6848200000000736,
+    "buffer_size": 5000,
+    "mean_reward": 94.85000610351562,
+    "std_reward": 1.0127029418945312,
+    "mean_length": 500.0,
+    "catch_rate": 0.0,
+    "total_catches": 0,
+    "mean_time_to_catch": null,
+    "std_time_to_catch": null,
+    "min_time_to_catch": null,
+    "max_time_to_catch": null
+  },
+  {
+    "timestep": 10000,
+    "episode": 20,
+    "epsilon": 0.5723200000000999,
+    "buffer_size": 5000,
+    "mean_reward": -0.6456407308578491,
+    "std_reward": 1.279821753501892,
+    "mean_length": 500.0,
+    "catch_rate": 0.0,
+    "total_catches": 0,
+    "mean_time_to_catch": null,
+    "std_time_to_catch": null,
+    "min_time_to_catch": null,
+    "max_time_to_catch": null
+  }
+]

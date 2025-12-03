@@ -1,26 +1,26 @@
 {
-  "num_parallel_envs": 50,
-  "max_episode_steps": 2000,
+  "num_parallel_envs": 4,
+  "max_episode_steps": 500,
   "frame_skip": 1,
 
-  "total_timesteps": 1000000,
-  "buffer_size": 100000,
-  "batch_size": 256,
-  "warmup_steps": 10000,
+  "total_timesteps": 10000,
+  "buffer_size": 5000,
+  "batch_size": 64,
+  "warmup_steps": 500,
   "train_frequency": 4,
-  "target_update_interval": 1000,
+  "target_update_interval": 500,
 
   "gamma": 0.99,
   "learning_rate": 0.0003,
   "tau": 1.0,
   "epsilon_start": 1.0,
-  "epsilon_end": 0.05,
+  "epsilon_end": 0.1,
   "epsilon_decay_fraction": 0.5,
 
-  "hidden_sizes": [256, 256, 128],
+  "hidden_sizes": [128, 128],
 
-  "eval_frequency": 10000,
-  "eval_episodes": 5,
+  "eval_frequency": 2500,
+  "eval_episodes": 2,
 
   "device": "cpu",
   "seed": 42,
@@ -39,7 +39,7 @@
     "personality_mismatch_penalty": -0.2,
     "personality_weight_start": 1.0,
     "personality_weight_end": 0.1,
-    "personality_decay_episodes": 5000,
+    "personality_decay_episodes": 100,
 
     "coordination_reward": 0.3,
     "clustering_penalty": -0.2,
