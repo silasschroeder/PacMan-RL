@@ -21,6 +21,23 @@ SCORE_SCREEN_OFFSET = 50
 
 GHOST_EATEN_EVENT = pygame.USEREVENT + 1
 
+class _DummySurface:
+    """Dummy surface for headless mode"""
+    def __init__(self, width=100, height=30):
+        self._width = width
+        self._height = height
+    
+    def get_width(self):
+        return self._width
+    
+    def get_height(self):
+        return self._height
+
+class _DummyFont:
+    """Dummy font for headless mode"""
+    def render(self, text, antialias, color):
+        return _DummySurface()
+
 class GameEngine:
 
     def __init__(self, screen: Surface, level: LevelConfig, player: Player, ghosts: list[Ghost]):
@@ -37,7 +54,11 @@ class GameEngine:
         self.player = player
         self.ghosts = ghosts
         self.direction_command = Direction.LEFT
-        self.game_font = pygame.font.SysFont('Comic Sans MS', 30)
+        try:
+            self.game_font = pygame.font.SysFont('Comic Sans MS', 30)
+        except pygame.error:
+            # Font system not initialized in headless mode
+            self.game_font = _DummyFont()
         self.score_coordinates = (SCORE_SCREEN_OFFSET, (self.screen.get_height() - SCORE_SCREEN_OFFSET))
         self.powerup_circle_coordinates = (250, ((self.screen.get_height() - SCORE_SCREEN_OFFSET) + 15))
         self.pause = False
@@ -46,7 +67,11 @@ class GameEngine:
 
     def show_game_over(self):
         self.screen.fill((0, 0, 0))
-        font = pygame.font.SysFont('arial', 40)
+        try:
+            font = pygame.font.SysFont('arial', 40)
+        except pygame.error:
+            # Font system not initialized in headless mode
+            font = _DummyFont()
         title = font.render('Game Over', True, 'red')
         restart_button = font.render('Hit Space to restart', True, (255, 255, 255))
         self.screen.blit(title, (
@@ -101,8 +126,12 @@ class GameEngine:
                     self.player.score_multiplier += 1
                     ghost.set_to_eaten()
                 elif ghost.is_chasing() or ghost.is_scatter():
-                    pygame.time.wait(500)
-                    pygame.time.set_timer(PLAYER_EATEN_EVENT, 1, True)
+                    try:
+                        pygame.time.wait(500)
+                        pygame.time.set_timer(PLAYER_EATEN_EVENT, 1, True)
+                    except pygame.error:
+                        # Skip timer/wait in headless mode
+                        pass
                     self.player.set_to_eaten()
 
     def play_ghost_runsaway_sound(self):

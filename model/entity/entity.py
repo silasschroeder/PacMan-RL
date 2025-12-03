@@ -134,13 +134,33 @@ class Entity:
     class SoundEffects:
         def __init__(self):
             self.munch_i = False
-            self.ghost_eaten = pygame.mixer.Sound('media/eat_ghost.wav')
-            self.munch = [pygame.mixer.Sound('media/munch_1.wav'), pygame.mixer.Sound('media/munch_2.wav')]
-            self.power_pellet = pygame.mixer.Sound('media/power_pellet.wav')
-            self.retreating = pygame.mixer.Sound('media/retreating.wav')
-            self.pacman_death = pygame.mixer.Sound('media/pacman_death.wav')
+            try:
+                # Try to initialize sound effects (will fail in headless mode)
+                self.ghost_eaten = pygame.mixer.Sound('media/eat_ghost.wav')
+                self.munch = [pygame.mixer.Sound('media/munch_1.wav'), pygame.mixer.Sound('media/munch_2.wav')]
+                self.power_pellet = pygame.mixer.Sound('media/power_pellet.wav')
+                self.retreating = pygame.mixer.Sound('media/retreating.wav')
+                self.pacman_death = pygame.mixer.Sound('media/pacman_death.wav')
+                self.enabled = True
+            except pygame.error:
+                # Headless mode - create dummy sound objects
+                self.ghost_eaten = self._DummySound()
+                self.munch = [self._DummySound(), self._DummySound()]
+                self.power_pellet = self._DummySound()
+                self.retreating = self._DummySound()
+                self.pacman_death = self._DummySound()
+                self.enabled = False
+
+        class _DummySound:
+            """Dummy sound object for headless mode."""
+            def play(self):
+                pass
+            def get_length(self):
+                return 0.0
 
         def play_munch(self):
+            if not self.enabled:
+                return
             if self.munch_i:
                 self.munch[1].play()
                 self.munch_i = False

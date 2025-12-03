@@ -39,6 +39,11 @@ class Ghost(Entity):
         self.enable_scatter_counter = 0
         self.sprite_counter = 0
         self.sprite_index = 0
+        
+        # RL control
+        self.rl_controlled = False
+        self.rl_action = None
+        self.original_direction = None  # Store personality-based direction
 
     def __recalculate_to_screen_coordinates(self, board_coordinates):
         return board_coordinates[0] * self.space_params.tile_width - self.space_params.tile_width // 2, \
@@ -86,9 +91,13 @@ class Ghost(Entity):
             self.state = self.State.SCATTER
 
     def set_to_eaten(self):
-        delay = self.sfx.ghost_eaten.get_length()
-        self.sfx.ghost_eaten.play()
-        pygame.time.set_timer(GHOST_EATEN_EVENT, int(delay * 1000), True)
+        try:
+            delay = self.sfx.ghost_eaten.get_length()
+            self.sfx.ghost_eaten.play()
+            pygame.time.set_timer(GHOST_EATEN_EVENT, int(delay * 1000), True)
+        except (pygame.error, AttributeError):
+            # Skip audio/timer in headless mode
+            pass
         self.state = self.State.EATEN
         self.velocity = FAST_VELOCITY
 
@@ -170,6 +179,7 @@ class Ghost(Entity):
         else:
             self.runaway = False
 
+        # Calculate original personality-based direction
         right_distance = self.calc_distance(self.location_x + self.space_params.tile_width, self.location_y)
         left_distance = self.calc_distance(self.location_x - self.space_params.tile_width, self.location_y)
         up_distance = self.calc_distance(self.location_x, self.location_y - self.space_params.tile_height)
@@ -182,16 +192,21 @@ class Ghost(Entity):
 
         if self.direction == Direction.RIGHT:
             next_turn = self.calc_next_turn([right, up, down])
-            self._move(next_turn)
         elif self.direction == Direction.LEFT:
             next_turn = self.calc_next_turn([left, up, down])
-            self._move(next_turn)
         elif self.direction == Direction.UP:
             next_turn = self.calc_next_turn([right, left, up])
-            self._move(next_turn)
         elif self.direction == Direction.DOWN:
             next_turn = self.calc_next_turn([right, left, down])
-            self._move(next_turn)
+        
+        # Store the original direction for RL reward calculation
+        self.original_direction = next_turn
+        
+        # Use RL action if in RL mode, otherwise use original behavior
+        if self.rl_controlled and self.rl_action is not None:
+            next_turn = self._rl_action_to_direction(self.rl_action)
+        
+        self._move(next_turn)
 
     def calc_next_turn(self, possible_decisions):
         prioritized = sorted(possible_decisions, key=lambda x: x[0], reverse=self.runaway)
@@ -269,6 +284,35 @@ class Ghost(Entity):
             self.turns.down = True
         else:
             self.turns.down = False
+
+    def set_rl_mode(self, enabled: bool) -> None:
+        """Enable or disable RL control mode."""
+        self.rl_controlled = enabled
+        if not enabled:
+            self.rl_action = None
+            self.original_direction = None
+    
+    def set_rl_action(self, action: int) -> None:
+        """Set the action chosen by the RL agent."""
+        self.rl_action = action
+    
+    def get_original_direction(self) -> Direction:
+        """Get the direction the ghost would have taken with original AI."""
+        return self.original_direction
+    
+    def _rl_action_to_direction(self, action: int) -> Direction:
+        """Convert RL action to direction."""
+        # Action mapping: 0=STAY, 1=LEFT, 2=RIGHT, 3=UP, 4=DOWN
+        if action == 1:
+            return Direction.LEFT
+        elif action == 2:
+            return Direction.RIGHT
+        elif action == 3:
+            return Direction.UP
+        elif action == 4:
+            return Direction.DOWN
+        else:  # action == 0 (STAY) - keep current direction
+            return self.direction
 
     class State(enum.Enum):
         # when a ghost is chasing pacman
