@@ -1,0 +1,24 @@
+{
+  "generations": 50,
+  "population_size": 100,
+  "max_steps": 1500,
+  "fitness_episodes": 3,
+  "elite_fraction": 0.1,
+  "tournament_size": 5,
+  "crossover_rate": 0.8,
+  "mutation_rate": 0.05,
+  "mutation_std": 0.1,
+  "frame_skip": 2,
+  "observation_include_board": false,
+  "seed": 42,
+  "device": "cpu",
+  "reward_config": {
+    "score_scale": 1.0,
+    "step_penalty": -0.1,
+    "pellet_reward": 0.5,
+    "power_pellet_reward": 10.0,
+    "ghost_reward": 30.0,
+    "life_lost_penalty": -100.0,
+    "death_penalty": -500.0
+  }
+}
