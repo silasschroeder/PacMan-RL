@@ -1,0 +1,28 @@
+{
+  "episodes": 50,
+  "max_steps": 4000,
+  "buffer_size": 50000,
+  "batch_size": 64,
+  "warmup_steps": 1000,
+  "target_update_interval": 1000,
+  "gamma": 0.99,
+  "learning_rate": 0.001,
+  "tau": 1.0,
+  "epsilon_start": 1.0,
+  "epsilon_end": 0.05,
+  "epsilon_decay_steps": 50000,
+  "frame_skip": 2,
+  "observation_include_board": true,
+  "seed": 42,
+  "device": "cpu",
+  "reward_config": {
+    "score_scale": 1.0,
+    "step_penalty": -0.1,
+    "pellet_reward": 10.0,
+    "power_pellet_reward": 300.0,
+    "ghost_reward": 700.0,
+    "life_lost_penalty": -100.0,
+    "death_penalty": -500.0
+  },
+  "evaluation_episodes": 5
+}
