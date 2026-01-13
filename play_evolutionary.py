@@ -5,11 +5,14 @@ from pathlib import Path
 
 import numpy as np
 
-from rl.training import load_checkpoint
+from rl.evolutionary_training import load_evolutionary_checkpoint
 from rl.env import PacmanEnv
 
 
-def _run_episode(env: PacmanEnv, agent, epsilon: float, max_steps: int | None) -> float:
+def _run_episode(
+    env: PacmanEnv, agent, epsilon: float, max_steps: int | None
+) -> float:
+    """Run a single episode with the evolutionary agent."""
     observation, _ = env.reset()
     state = np.asarray(observation, dtype=np.float32)
     total_reward = 0.0
@@ -25,15 +28,29 @@ def _run_episode(env: PacmanEnv, agent, epsilon: float, max_steps: int | None) -
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Render a trained Pacman agent playing an episode")
-    parser.add_argument("checkpoint", type=Path, help="Path to the saved checkpoint (best.pt or latest.pt)")
-    parser.add_argument("--episodes", type=int, default=1, help="Number of episodes to render")
-    parser.add_argument("--epsilon", type=float, default=0.0, help="Exploration epsilon while rendering")
+    """Render an evolved Pacman agent playing episodes."""
+    parser = argparse.ArgumentParser(
+        description="Render a trained evolutionary agent playing Pacman"
+    )
+    parser.add_argument(
+        "checkpoint",
+        type=Path,
+        help="Path to saved checkpoint (best.pt or latest.pt)",
+    )
+    parser.add_argument(
+        "--episodes", type=int, default=1, help="Number of episodes to render"
+    )
+    parser.add_argument(
+        "--epsilon",
+        type=float,
+        default=0.0,
+        help="Exploration epsilon while rendering",
+    )
     parser.add_argument(
         "--max-steps",
         type=int,
         default=None,
-        help="Step cap per episode (default: 10000 for full games, use --max-steps 500 to match training)",
+        help="Step cap per episode (default: 10000 for full games, use --max-steps 1500 to match training)",
     )
     parser.add_argument(
         "--no-limit",
@@ -42,7 +59,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    agent, config = load_checkpoint(str(args.checkpoint))
+    # Load checkpoint
+    agent, config = load_evolutionary_checkpoint(str(args.checkpoint))
 
     # Determine max steps - default to 10000 for watching full games
     if args.no_limit:
@@ -52,6 +70,7 @@ def main() -> None:
     else:
         env_max_steps = 10000  # High enough for full games
 
+    # Create environment with rendering
     env = PacmanEnv(
         frame_skip=config.frame_skip,
         render_mode="human",

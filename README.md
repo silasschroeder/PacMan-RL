@@ -6,24 +6,24 @@ Old classic Pacman game written in Python using pygame library.
 
 # Description
 
-The game contains a single demo-level. To increase difficulty you can play around with variables in settings file changing POWERUP_LIMIT, SCATTER_DISABLE_TRIGGER, SCATTER_ENABLE_TRIGGER, VELOCITY. You can also set 
+The game contains a single demo-level. To increase difficulty you can play around with variables in settings file changing POWERUP_LIMIT, SCATTER_DISABLE_TRIGGER, SCATTER_ENABLE_TRIGGER, VELOCITY. You can also set
 variable DEBUG to True to see ghosts targets visualization and grid.
 
 ## Ghosts behaviour
 
 | Name   | Description  | Behaviour                                                                                                                                                                                                                                                               |
-|--------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Blinky | Red Ghost    | Follows Pac-Man directly during Chase mode, and heads to the upper-right corner during Scatter mode.                                                                                                                                                                    |
 | Pinky  | Pink ghost   | Chases towards the spot 2 Pac-Dots in front of Pac-Man. Due to a bug in the original game's coding, if Pac-Man faces upwards, Pinky's target will be 2 Pac-Dots in front of and 2 to the left of Pac-Man. During Scatter mode, she heads towards the upper-left corner. |
 | Inky   | Blue ghost   | During Chase mode, his target is a bit complex. His target is relative to both Blinky and Pac-Man, where the distance Blinky is from Pinky's target is doubled to get Inky's target. He heads to the lower-right corner during Scatter mode.                            |
 | Clyde  | Yellow ghost | Chases directly after Pac-Man, but tries to head to his Scatter corner when within an 8-Dot radius of Pac-Man. His Scatter Mode corner is the lower-left.                                                                                                               |
-
 
 ## Reinforcement Learning Extensions
 
 The repository now includes an RL-ready wrapper over the pygame game loop to let agents control Pacman programmatically.
 
 ### Environment wrapper
+
 - Module: `rl/env.py`
 - Class: `PacmanEnv`
 - Features:
@@ -40,6 +40,7 @@ python -m examples.random_rollout --episodes 1 --steps 200
 ```
 
 Flags:
+
 - `--render` to watch gameplay.
 - `--episodes` / `--steps` to control episode count and length.
 
@@ -179,3 +180,158 @@ python play_agent.py runs/exp01/best.pt --episodes 3 --epsilon 0.05
   - `0.0` for a fully greedy policy (deterministic execution of the learned Q-values).
   - A small positive value (e.g., `0.05`) to occasionally sample alternate actions, useful for diagnosing behavior in uncertain states.
 - Omit `--max-steps` to use the training horizon; provide a custom value to cap episode length during visualization.
+
+---
+
+## Evolutionary Algorithm (Genetic Algorithm) Support
+
+In addition to Deep Q-Learning, the repository now includes a **Genetic Algorithm (GA)** implementation for training Pacman agents via neuroevolution. This enables direct comparison between gradient-based learning (DQN) and evolutionary optimization.
+
+### Why Genetic Algorithm?
+
+**Genetic Algorithms optimize neural network weights through evolution** rather than backpropagation:
+
+- **Population-based**: Maintains multiple candidate solutions (genomes) that compete based on fitness
+- **No gradients**: Uses selection, crossover, and mutation operators instead of gradient descent
+- **Direct comparison with DQN**: Uses identical network architecture (256→256 hidden layers) to ensure fair benchmarking
+
+### Quick Start
+
+Train an evolutionary agent with default settings:
+
+```bash
+python train_evolutionary.py --generations 50 --output runs/evolutionary
+```
+
+Watch the best evolved agent play:
+
+```bash
+python play_evolutionary.py runs/evolutionary/best.pt --episodes 3
+```
+
+Evaluate performance:
+
+```bash
+python evaluate_evolutionary.py --checkpoint runs/evolutionary/best.pt --episodes 20
+```
+
+### Configuration
+
+Evolutionary training uses `EvolutionaryConfig` with these key parameters:
+
+```json
+{
+  "generations": 50,
+  "population_size": 100,
+  "max_steps": 1500,
+  "fitness_episodes": 3,
+  "elite_fraction": 0.1,
+  "tournament_size": 5,
+  "crossover_rate": 0.8,
+  "mutation_rate": 0.05,
+  "mutation_std": 0.1,
+  "frame_skip": 2,
+  "observation_include_board": false,
+  "seed": 42,
+  "device": "cpu",
+  "reward_config": {
+    /* same as DQN */
+  }
+}
+```
+
+**Key parameters explained:**
+
+- `generations`: Number of evolutionary generations (like epochs in DQN)
+- `population_size`: Number of individuals (genomes) per generation
+- `fitness_episodes`: Episodes averaged to evaluate each individual's fitness
+- `elite_fraction`: Top percentage of population preserved unchanged (elitism)
+- `tournament_size`: Number of candidates in tournament selection
+- `crossover_rate`: Probability of breeding two parents vs. copying
+- `mutation_rate`: Probability each weight gets perturbed
+- `mutation_std`: Standard deviation of Gaussian mutation noise
+
+### How It Works
+
+1. **Initialization**: Population of 100 random genomes (neural network weight vectors)
+2. **Evaluation**: Each genome controls Pacman for 3 episodes; fitness = average reward
+3. **Selection**: Rank-based tournament selection picks parents for breeding
+4. **Reproduction**:
+   - **Elitism**: Top 10% copied directly to next generation
+   - **Crossover**: Uniform crossover swaps weights between parent pairs (80% rate)
+   - **Mutation**: Gaussian noise applied to weights (5% per-weight probability)
+5. **Repeat**: Process continues for 50 generations
+
+### Metrics Tracked
+
+The evolutionary training logs both standard and EA-specific metrics:
+
+**Standard (comparable with DQN):**
+
+- `best_fitness`: Highest reward in current generation
+- `generation`: Current generation number
+
+**EA-specific:**
+
+- `mean_fitness`: Average fitness across population
+- `worst_fitness`: Lowest fitness in population
+- `std_fitness`: Population fitness standard deviation (diversity measure)
+- `median_fitness`: Median fitness
+- `best_fitness_ever`: Best fitness across all generations
+
+### CLI Highlights
+
+**Training:**
+
+```bash
+# Use config file
+python train_evolutionary.py --config configs/evolutionary_default.json
+
+# Override parameters
+python train_evolutionary.py \
+  --generations 100 \
+  --population-size 150 \
+  --max-steps 2000 \
+  --output runs/exp_ga01
+
+# Run evaluation after training
+python train_evolutionary.py --output runs/exp_ga01 --eval --eval-episodes 20
+```
+
+**Evaluation:**
+
+```bash
+python evaluate_evolutionary.py \
+  --checkpoint runs/evolutionary/best.pt \
+  --episodes 20 \
+  --max-steps 2000
+```
+
+**Playback:**
+
+```bash
+# Watch 5 episodes
+python play_evolutionary.py runs/evolutionary/best.pt --episodes 5
+```
+
+### Comparing DQN vs. Genetic Algorithm
+
+Both approaches use:
+
+- ✅ Same network architecture (256, 256 hidden layers)
+- ✅ Same observation space and action space
+- ✅ Same reward function (configurable via `RewardConfig`)
+- ✅ Same evaluation metrics (episode reward, steps)
+
+Key differences:
+
+- **DQN**: Gradient-based, sample efficient, uses replay buffer and temporal difference learning
+- **GA**: Gradient-free, parallelizable evaluations, explores via population diversity
+
+**Comparison workflow:**
+
+1. Train DQN: `python train_agent.py --episodes 200 --output runs/dqn_exp`
+2. Train GA: `python train_evolutionary.py --generations 50 --output runs/ga_exp`
+3. Compare metrics: Load `metrics.json` from both directories
+4. Evaluate both: Use respective evaluation scripts with same episode count
+5. Visualize: Plot learning curves (DQN episodes vs. GA generations)

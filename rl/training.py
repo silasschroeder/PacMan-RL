@@ -16,7 +16,7 @@ from rl.env import PacmanEnv, RewardConfig
 @dataclass
 class TrainingConfig:
     episodes: int = 200
-    max_steps: int = 500
+    max_steps: int = 1500  # Match GA default for fair comparison
     buffer_size: int = 50_000
     batch_size: int = 64
     warmup_steps: int = 1_000
@@ -119,6 +119,8 @@ def run_training(config: TrainingConfig, output_dir: Optional[str] = None) -> Tr
     if output_path:
         output_path.mkdir(parents=True, exist_ok=True)
 
+    print(f"Starting DQN training: {config.episodes} episodes, {config.max_steps} steps per episode")
+
     try:
         for episode in range(1, config.episodes + 1):
             observation, _ = env.reset()
@@ -163,11 +165,23 @@ def run_training(config: TrainingConfig, output_dir: Optional[str] = None) -> Tr
                 }
             )
 
+            # Print progress every 10 episodes
+            if episode % 10 == 0 or episode == 1:
+                print(f"Episode {episode}/{config.episodes}: "
+                      f"reward={episode_reward:.2f}, "
+                      f"steps={step}, "
+                      f"loss={mean_loss:.4f}, "
+                      f"epsilon={agent.epsilon:.3f}")
+
             if output_path and episode_reward > best_reward:
                 best_reward = episode_reward
                 save_checkpoint(agent, config, output_path / "best.pt")
+                if episode > 1:  # Skip printing for first episode
+                    print(f"  ✓ New best reward: {best_reward:.2f}")
     finally:
         env.close()
+
+    print(f"\nTraining complete! Best reward: {best_reward:.2f}")
 
     if output_path:
         history_path = output_path / "metrics.json"
