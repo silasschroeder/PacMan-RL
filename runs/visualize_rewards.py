@@ -74,9 +74,15 @@ def load_metrics(path: Path) -> tuple[list[int], list[float]]:
     episodes = []
     rewards = []
     for entry in data:
-        if "episode" in entry and "reward" in entry:
-            episodes.append(int(entry["episode"]))
-            rewards.append(float(entry["reward"]))
+        if "episode" in entry and "reward" in entry or "generation" in entry and "median_fitness" in entry:
+            try:
+                episodes.append(int(entry["episode"]))
+            except:
+                episodes.append(int(entry["generation"]))
+            try:
+                rewards.append(float(entry["reward"]))
+            except:
+                rewards.append(float(entry["mean_fitness"]))
 
     if not episodes:
         raise ValueError(f"No episode/reward pairs found in {path}")
